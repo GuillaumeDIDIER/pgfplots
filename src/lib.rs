@@ -127,6 +127,7 @@ impl fmt::Display for PictureKey {
 /// ```
 #[derive(Clone, Debug, Default)]
 pub struct Picture {
+    extra_preamble: String,
     keys: Vec<PictureKey>,
     pub axes: Vec<Axis>,
 }
@@ -158,6 +159,7 @@ impl fmt::Display for Picture {
 impl From<Axis> for Picture {
     fn from(axis: Axis) -> Self {
         Self {
+            extra_preamble: "".to_string(),
             keys: Vec::new(),
             axes: vec![axis],
         }
@@ -229,9 +231,38 @@ impl Picture {
         String::from("\\documentclass{standalone}\n")
             + "\\usepackage{pgfplots}\n"
             + "\\begin{document}\n"
+            + &self.extra_preamble
             + &self.to_string()
             + "\n\\end{document}"
     }
+    /// Returns the extra preamble
+    pub fn extra_preamble(&self) -> &str {
+        self.extra_preamble.as_ref()
+    }
+
+    /// Set the extra preamble, inserted in `standalone_string` before the picture environment
+    ///
+    /// # Exemples
+    /// ```
+    /// use pgfplots::Picture;
+    ///
+    /// let mut picture = Picture::new();
+    /// picture.set_extra_preamble(String::from("\\definecolor{HistBlue}{HTML}{377EB8}\n"));
+    ///
+    /// assert_eq!(
+    /// r#"\documentclass{standalone}
+    /// \usepackage{pgfplots}
+    /// \begin{document}
+    /// \definecolor{HistBlue}{HTML}{377EB8}
+    /// \begin{tikzpicture}
+    /// \end{tikzpicture}
+    /// \end{document}"#,
+    /// picture.standalone_string());
+    /// ```
+    pub fn set_extra_preamble(&mut self, preamble: String) {
+        self.extra_preamble = preamble;
+    }
+
     /// Compile the picture environment into a standalone PDF document. This
     /// will create the file `jobname.pdf` in the specified `working_dir`
     /// (additional files will be created in the same directory e.g. `.log` and
