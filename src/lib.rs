@@ -46,7 +46,7 @@
 use crate::axis::{plot::PlotKey, AxisKey};
 
 use crate::axis::{plot::Plot2D, Axis};
-use rand::distributions::{Alphanumeric, DistString};
+use rand::distr::{Alphanumeric, SampleString};
 use std::fmt;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -381,7 +381,7 @@ impl Picture {
         fn random_jobname() -> String {
             loop {
                 let mut jobname = "pgfplots_".to_string();
-                Alphanumeric.append_string(&mut rand::thread_rng(), &mut jobname, 8);
+                Alphanumeric.append_string(&mut rand::rng(), &mut jobname, 8);
                 let pdf_path = std::env::temp_dir().join(jobname.clone() + ".pdf");
                 let log_path = std::env::temp_dir().join(jobname.clone() + ".log");
                 let aux_path = std::env::temp_dir().join(jobname.clone() + ".aux");
