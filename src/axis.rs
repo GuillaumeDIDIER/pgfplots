@@ -1,6 +1,6 @@
 use crate::axis::plot::Plot2D;
 use std::fmt;
-
+use dyn_clone::DynClone;
 // Only imported for documentation. If you notice that this is no longer the
 // case, please change it.
 #[allow(unused_imports)]
@@ -8,6 +8,10 @@ use crate::Picture;
 
 /// Plot inside an [`Axis`] environment.
 pub mod plot;
+
+pub trait AxisLike : fmt::Display + fmt::Debug  + DynClone {
+    fn needed_preamble(&self) -> Vec<String>;
+}
 
 /// PGFPlots options passed to the [`Axis`] environment.
 ///
@@ -73,9 +77,16 @@ impl fmt::Display for AxisKey {
 /// ```
 #[derive(Clone, Debug, Default)]
 pub struct Axis {
-    keys: Vec<AxisKey>,
+    pub(crate) keys: Vec<AxisKey>,
     pub plots: Vec<Plot2D>,
 }
+
+impl AxisLike for Axis {
+    fn needed_preamble(&self) -> Vec<String> {
+        vec![]
+    }
+}
+dyn_clone::clone_trait_object!(AxisLike);
 
 impl fmt::Display for Axis {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

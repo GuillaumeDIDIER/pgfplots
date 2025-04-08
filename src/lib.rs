@@ -40,12 +40,13 @@
 //! creating an [`Axis`] and adding plots to it. An [`Axis`] and its individual
 //! [`Plot2D`]s are customized by [`AxisKey`]s and [`PlotKey`]s respectively.
 
+use std::collections::HashSet;
 // Only imported for documentation. If you notice that this is no longer the
 // case, please change it.
 #[allow(unused_imports)]
 use crate::axis::{plot::PlotKey, AxisKey};
 
-use crate::axis::{plot::Plot2D, Axis};
+use crate::axis::{plot::Plot2D, Axis, AxisLike};
 use rand::distr::{Alphanumeric, SampleString};
 use std::fmt;
 use std::io::Write;
@@ -125,11 +126,23 @@ impl fmt::Display for PictureKey {
 ///     % axis environments
 /// \end{tikzpicture}
 /// ```
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Picture {
-    extra_preamble: String,
+    preamble: Vec<String>,
+    preamble_directives: HashSet<String>,
     keys: Vec<PictureKey>,
-    pub axes: Vec<Axis>,
+    pub axes: Vec<Box<dyn AxisLike>>,
+}
+
+impl Default for Picture {
+    fn default() -> Self {
+        Self{
+            preamble: vec![],
+            preamble_directives: Default::default(),
+            keys: vec![],
+            axes: vec![],
+        }
+    }
 }
 
 impl fmt::Display for Picture {
@@ -156,15 +169,23 @@ impl fmt::Display for Picture {
     }
 }
 
-impl From<Axis> for Picture {
-    fn from(axis: Axis) -> Self {
+impl From<Box<dyn AxisLike>> for Picture {
+    fn from(axis: Box<dyn AxisLike>) -> Self {
         Self {
-            extra_preamble: "".to_string(),
+            preamble: vec![], /* Fixme, this needs to have the default Premable instead */
+            preamble_directives: HashSet::new(),
             keys: Vec::new(),
             axes: vec![axis],
         }
     }
 }
+
+impl<T : AxisLike + 'static> From<T> for Picture {
+    fn from(axis: T) -> Self {
+        Self::from(Box::from(axis) as Box::<dyn AxisLike>)
+    }
+}
+
 impl From<Plot2D> for Picture {
     fn from(plot: Plot2D) -> Self {
         Picture::from(Axis::from(plot))
@@ -230,14 +251,14 @@ impl Picture {
     pub fn standalone_string(&self) -> String {
         String::from("\\documentclass{standalone}\n")
             + "\\usepackage{pgfplots}\n"
+            + &self.preamble.join("\n")
             + "\\begin{document}\n"
-            + &self.extra_preamble
             + &self.to_string()
             + "\n\\end{document}"
     }
     /// Returns the extra preamble
-    pub fn extra_preamble(&self) -> &str {
-        self.extra_preamble.as_ref()
+    pub fn preamble(&self) -> &Vec<String> {
+        &self.preamble
     }
 
     /// Set the extra preamble, inserted in `standalone_string` before the picture environment
@@ -247,20 +268,25 @@ impl Picture {
     /// use pgfplots::Picture;
     ///
     /// let mut picture = Picture::new();
-    /// picture.set_extra_preamble(String::from("\\definecolor{HistBlue}{HTML}{377EB8}\n"));
+    /// picture.add_to_preamble(vec![String::from("\\definecolor{HistBlue}{HTML}{377EB8}\n")]);
     ///
     /// assert_eq!(
     /// r#"\documentclass{standalone}
     /// \usepackage{pgfplots}
-    /// \begin{document}
     /// \definecolor{HistBlue}{HTML}{377EB8}
+    /// \begin{document}
     /// \begin{tikzpicture}
     /// \end{tikzpicture}
     /// \end{document}"#,
     /// picture.standalone_string());
     /// ```
-    pub fn set_extra_preamble(&mut self, preamble: String) {
-        self.extra_preamble = preamble;
+    pub fn add_to_preamble(&mut self, directives: Vec<String>) {
+        for directive in directives {
+            if !self.preamble_directives.contains(&directive) {
+                self.preamble.push(directive.clone());
+                self.preamble_directives.insert(directive);
+            }
+        }
     }
 
     /// Compile the picture environment into a standalone PDF document. This
@@ -400,3 +426,4 @@ impl Picture {
 
 #[cfg(test)]
 mod tests;
+mod groupplot;
