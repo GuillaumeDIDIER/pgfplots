@@ -250,6 +250,16 @@ impl Picture {
     /// picture.standalone_string());
     /// ```
     pub fn standalone_string(&self) -> String {
+        let mut preamble = self.preamble.clone();
+        let mut preamble_directivs = self.preamble_directives.clone();
+        for axis in self.axes.iter() {
+            for directive in axis.needed_preamble() {
+                if !preamble_directivs.contains(&directive) {
+                    preamble.push(directive.clone());
+                    preamble_directivs.insert(directive);
+                }
+            }
+        }
         String::from("\\documentclass{standalone}\n")
             + "\\usepackage{pgfplots}\n"
             + &self.preamble.join("\n")
