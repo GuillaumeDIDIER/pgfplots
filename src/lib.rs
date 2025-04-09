@@ -57,6 +57,7 @@ use thiserror::Error;
 
 /// Axis environment inside a [`Picture`].
 pub mod axis;
+pub mod groupplot;
 
 /// Engine to compile a [`Picture`] into a PDF.
 #[derive(Clone, Copy, Debug)]
@@ -426,4 +427,4 @@ impl Picture {
 
 #[cfg(test)]
 mod tests;
-mod groupplot;
+

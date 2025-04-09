@@ -7,6 +7,88 @@ pub struct GroupPlot<const M: usize, const N: usize> {
     pub groups: [[Axis; N]; M],
 }
 
+impl<const M: usize, const N: usize> GroupPlot<M,N>  {
+    /// Creates a new, empty axis environment.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pgfplots::groupplot::GroupPlot;
+    ///
+    /// let axis = GroupPlot::new();
+    /// ```
+    pub fn new() -> Self {
+        Default::default()
+    }
+    /// Set the title of the axis environment. This can be valid LaTeX e.g.
+    /// inline math.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pgfplots::groupplot::GroupPlot;
+    ///
+    /// let mut axis = GroupPlot::new();
+    /// axis.set_title("My plot: $y = x^2$");
+    /// ```
+    pub fn set_title<S: Into<String>>(&mut self, title: S) {
+        self.add_key(AxisKey::Title(title.into()));
+    }
+    /// Set the label of the *x* axis. This can be valid LaTeX e.g. inline math.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pgfplots::groupplot::GroupPlot;
+    ///
+    /// let mut axis = GroupPlot::new();
+    /// axis.set_x_label("$x$~[m]");
+    /// ```
+    pub fn set_x_label<S: Into<String>>(&mut self, label: S) {
+        self.add_key(AxisKey::XLabel(label.into()));
+    }
+    /// Set the label of the *y* axis. This can be valid LaTeX e.g. inline math.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pgfplots::groupplot::GroupPlot;
+    ///
+    /// let mut axis = GroupPlot::new();
+    /// axis.set_y_label("$y$~[m]");
+    /// ```
+    pub fn set_y_label<S: Into<String>>(&mut self, label: S) {
+        self.add_key(AxisKey::YLabel(label.into()));
+    }
+    /// Add a key to control the appearance of the axis. This will overwrite
+    /// any previous mutually exclusive key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pgfplots::axis::{AxisKey, Scale::Log};
+    /// use pgfplots::groupplot::GroupPlot;
+    /// let mut axis = GroupPlot::new();
+    /// axis.add_key(AxisKey::YMode(Log));
+    /// ```
+    pub fn add_key(&mut self, key: AxisKey) {
+        match key {
+            AxisKey::Custom(_) => (),
+            _ => {
+                if let Some(index) = self
+                    .keys
+                    .iter()
+                    .position(|k| std::mem::discriminant(k) == std::mem::discriminant(&key))
+                {
+                    self.keys.remove(index);
+                }
+            }
+        }
+        self.keys.push(key);
+    }
+
+}
+
 impl<const M: usize, const N: usize> Default for GroupPlot<M, N> {
     fn default() -> Self {
         let d1: [Axis; N] = array_init::array_init(|_|{Default::default()});
