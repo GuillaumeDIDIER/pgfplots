@@ -104,7 +104,7 @@ impl<const M: usize, const N: usize> Display for GroupPlot<M, N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "\\begin{{groupplot}}")?;
         if !self.keys.is_empty() {
-            writeln!(f, "[group size={} by {},", M, N)?;
+            writeln!(f, "[group style={{group size={} by {}}},", M, N)?;
             for key in self.keys.iter() {
                 writeln!(f, "\t{key},")?;
             }
