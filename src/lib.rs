@@ -262,7 +262,7 @@ impl Picture {
         }
         String::from("\\documentclass{standalone}\n")
             + "\\usepackage{pgfplots}\n"
-            + &self.preamble.join("\n")
+            + &preamble.join("\n")
             + "\\begin{document}\n"
             + &self.to_string()
             + "\n\\end{document}"
