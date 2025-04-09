@@ -343,6 +343,7 @@ impl Picture {
                     .status()?;
 
                 if !status.success() {
+                    opener::open(working_dir.as_ref());
                     return Err(CompileError::BadExitCode { status });
                 }
             }
