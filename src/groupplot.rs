@@ -1,13 +1,22 @@
-use std::fmt::{Display, Formatter};
 use crate::axis::{Axis, AxisKey, AxisLike};
+use crate::groupplot::GroupDimension::Rectangle;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
-pub struct GroupPlot<const M: usize, const N: usize> {
-    keys: Vec<AxisKey>,
-    pub groups: [[Axis; N]; M],
+pub enum GroupDimension {
+    Horizontal(usize),
+    Vertical(usize),
+    Rectangle(usize, usize),
 }
 
-impl<const M: usize, const N: usize> GroupPlot<M,N>  {
+#[derive(Clone, Debug)]
+pub struct GroupPlot {
+    keys: Vec<AxisKey>,
+    pub groups: Vec<Axis>,
+    pub dimension: GroupDimension,
+}
+
+impl GroupPlot {
     /// Creates a new, empty axis environment.
     ///
     /// # Examples
@@ -86,54 +95,58 @@ impl<const M: usize, const N: usize> GroupPlot<M,N>  {
         }
         self.keys.push(key);
     }
-
 }
 
-impl<const M: usize, const N: usize> Default for GroupPlot<M, N> {
+impl Default for GroupPlot {
     fn default() -> Self {
-        let d1: [Axis; N] = array_init::array_init(|_|{Default::default()});
-        let groups: [[Axis; N]; M] = array_init::array_init(|_|{d1.clone()});
-        Self{
+        Self {
             keys: vec![],
-            groups,
+            groups: vec![],
+            dimension: Rectangle(1, 1),
         }
     }
 }
 
-impl<const M: usize, const N: usize> Display for GroupPlot<M, N> {
+impl Display for GroupPlot {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "\\begin{{groupplot}}")?;
+        match self.dimension {
+            GroupDimension::Horizontal(n) => {
+                writeln!(f, "[group style={{group size={} by 1}},", n)?;
+            }
+            GroupDimension::Vertical(n) => {
+                writeln!(f, "[group style={{group size=1 by {}}},", n)?;
+            }
+            GroupDimension::Rectangle(m, n) => {
+                writeln!(f, "[group style={{group size={} by {}}},", m, n)?;
+            }
+        }
         if !self.keys.is_empty() {
-            writeln!(f, "[group style={{group size={} by {}}},", M, N)?;
             for key in self.keys.iter() {
                 writeln!(f, "\t{key},")?;
             }
-            write!(f, "]")?;
         }
-        writeln!(f)?;
-        for i in 0..M {
-            for j in 0..N {
-                let axis = &self.groups[i][j];
-                if !axis.keys.is_empty() {
-                    writeln!(f, "\\nextgroupplot[")?;
-                    for key in axis.keys.iter() {
-                        writeln!(f, "\t{key},")?;
-                    }
-                    write!(f, "]")?;
-                } else {
-                    writeln!(f, "\\nextgroupplot")?;
+        writeln!(f, "]")?;
+        for plot in self.groups.iter() {
+            if !plot.keys.is_empty() {
+                writeln!(f, "\\nextgroupplot[")?;
+                for key in plot.keys.iter() {
+                    writeln!(f, "\t{key},")?;
                 }
-                writeln!(f)?;
-                for plot in axis.plots.iter() {
-                    writeln!(f, "{plot}")?;
-                }
+                write!(f, "]")?;
+            } else {
+                writeln!(f, "\\nextgroupplot")?;
+            }
+            writeln!(f)?;
+            for plot in plot.plots.iter() {
+                writeln!(f, "{plot}")?;
             }
         }
         write!(f, "\\end{{groupplot}}")
     }
 }
 
-impl<const M: usize, const N: usize> AxisLike  for GroupPlot<M, N> {
+impl AxisLike for GroupPlot {
     fn needed_preamble(&self) -> Vec<String> {
         vec![String::from("\\usepgfplotslibrary{groupplots}")]
     }
