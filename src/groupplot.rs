@@ -2,7 +2,7 @@ use crate::axis::{Axis, AxisKey, AxisLike};
 use crate::groupplot::GroupDimension::Rectangle;
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub enum GroupDimension {
     Horizontal(usize),
     Vertical(usize),
