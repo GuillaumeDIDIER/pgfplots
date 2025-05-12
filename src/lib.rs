@@ -65,6 +65,7 @@ pub mod groupplot;
 pub enum Engine {
     /// `Pdflatex` engine (requires `pdflatex` to be installed).
     PdfLatex,
+    LuaLatex,
     #[cfg(feature = "tectonic")]
     /// `Tectonic` engine (does not require any external software).
     Tectonic,
@@ -137,7 +138,7 @@ pub struct Picture {
 
 impl Default for Picture {
     fn default() -> Self {
-        Self{
+        Self {
             preamble: vec![],
             preamble_directives: Default::default(),
             keys: vec![],
@@ -181,9 +182,9 @@ impl From<Box<dyn AxisLike>> for Picture {
     }
 }
 
-impl<T : AxisLike + 'static> From<T> for Picture {
+impl<T: AxisLike + 'static> From<T> for Picture {
     fn from(axis: T) -> Self {
-        Self::from(Box::from(axis) as Box::<dyn AxisLike>)
+        Self::from(Box::from(axis) as Box<dyn AxisLike>)
     }
 }
 
@@ -357,6 +358,24 @@ impl Picture {
                     return Err(CompileError::BadExitCode { status });
                 }
             }
+            Engine::LuaLatex => {
+                let status = Command::new("lualatex")
+                    .current_dir(working_dir.as_ref())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .arg("--interaction=batchmode")
+                    .arg("--halt-on-error")
+                    .arg("--synctex=1")
+                    .arg("--output-format=pdf")
+                    .arg(String::from("--jobname=") + jobname.as_ref())
+                    .arg(tex_file.path())
+                    .status()?;
+
+                if !status.success() {
+                    opener::open(working_dir.as_ref());
+                    return Err(CompileError::BadExitCode { status });
+                }
+            }
             #[cfg(feature = "tectonic")]
             // Modified from `tectonic::latex_to_pdf` to generate the files
             // instead of just returning the bytes.
@@ -438,4 +457,3 @@ impl Picture {
 
 #[cfg(test)]
 mod tests;
-
